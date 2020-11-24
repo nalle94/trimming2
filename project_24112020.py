@@ -406,9 +406,9 @@ if args.phred_scale == None:
 	infile.seek(0)
 	
 #Initialize
-(read_count, trim_count, removed_count, line_count) = (0, 0, 0, 0)
+(read_count, trim_count, filtered_count, excluded_count, line_count) = (0, 0, 0, 0, 0)
 (count_n, count_a, count_c, count_g, count_t, count_n_trim)= (0, 0, 0, 0, 0, 0)
-(seq, quality) = ('', '')
+(header, seq, plusline, quality) = ('', '', '', '')
 error_seq = []
 
 #read one sequence at a time and sort lines
@@ -427,9 +427,13 @@ for line in infile:
 
 	#If sequence and qualityity data are both containing data - trimming functions are performed according to arguments from command line
 	if seq != '' and quality != '':
-		#if length of seq and quality data is not the same, the read is not trimmed or saved to outfile
+		#If length of seq and quality data is not the same, the read is not trimmed or saved to outfile
 		if len(seq) != len(quality):
 			error_seq.append(header)
+			read_count += 1
+			excluded_count += 1
+			(header, seq, plusline, quality) = ('', '', '', '')
+			continue
 		seq_qual = list(zip(seq, quality))
 		#Count number of nucleotides in input file
 		for nuc, asci in seq_qual:
@@ -445,11 +449,15 @@ for line in infile:
 			seq_qual_trim = trim_single_nuc_5(seq_qual_trim, args.min_residue5)
 		elif args.mean_mw5:
 			seq_qual_trim = trim_moving_window_5(seq_qual_trim, args.mean_mw5)
+		elif args.min_mw5:
+			seq_qual_trim = trim_min_moving_window_5(seq_qual_trim, args.min_mw3)
 		#Trim based on qualityity of nucleotides from 3' end
 		if args.min_residue3:
 			seq_qual_trim = trim_single_nuc_3(seq_qual_trim, args.min_residue3)
 		elif args.mean_mw3:
 			seq_qual_trim = trim_moving_window_3(seq_qual_trim, args.mean_mw3)
+		elif args.min_mw3:
+			seq_qual_trim = trim_min_moving_window_3(seq_qual_trim, args.min_mw3)
 
 		#Increase read count by 1
 		read_count += 1
@@ -463,36 +471,38 @@ for line in infile:
 			count_n_trim += nuc.count('N')
 
 		if read_mean_quality < args.min_mean_qual or len(seq_qual_trim) < args.min_read_len or count_n_trim > 5:
-			removed_count += 1
-			#reset and break from loop with no saving of read to outfile
-			seq = ''
-			quality = ''
+			filtered_count += 1
+			#Reset and continue to next read with no saving of read to outfile
+			(header, seq, plusline, quality) = ('', '', '', '')
 			continue
 
 		#Print read to outfile
 		seq_qual_sep = list(zip(*seq_qual_trim))
 		print(header, file = outfile)
 		print(''.join(seq_qual_sep[0]), file = outfile)
-		print('+', file = outfile)
+		print(plusline, file = outfile)
 		print(''.join(seq_qual_sep[1]), file = outfile)
 		#Reset seq and quality for next read
-		seq = ''
-		quality = ''
+		(header, seq, plusline, quality) = ('', '', '', '')
 
 
-####saving to log file
+####Saving to log file
 print('{:25}'.format('Number of reads:'), '{:>5}'.format(read_count), file = logfile)
 print('{:25}'.format('Number of trimmed reads:'), '{:>5}'.format(trim_count), file = logfile)
-print('{:25}'.format('Number of removed reads:'), '{:>5}'.format(removed_count), file = logfile)
+print('{:25}'.format('Number of filtered reads:'), '{:>5}'.format(filtered_count), file = logfile)
+print('{:25}'.format('Number of excluded reads:'), '{:>5}'.format(excluded_count), '(excluded reads are listed below)', file = logfile)
 
-#calculate GC content
+#Calculate GC content
 GC = (float(count_g) + float(count_c)) / (float(count_a) + float(count_t) + float(count_g) + float(count_c) + float(count_n))
 #save nucleotide counts to logfile
 print('\nTotal nucleotide counts\nA:', count_a, '\nT:', count_t, '\nG:', count_g, '\nC:', count_c, '\nGC content:', '{:.2f}'.format(GC), file = logfile)
 
-#if there is sequences and quality data not matching
+#If there are reads, where sequences and quality data don't match
+print('\nReads with non-matching sequence and quality data length (excluded from analysis):', file = logfile)
 if len(error_seq) != 0:
-	print('\nReads with quality data length and read length not matching: ', error_seq, file = logfile)
+	print('\n'.join(error_seq), file = logfile)
+else:
+	print('NA', file = logfile)
 
 
 ####close files####

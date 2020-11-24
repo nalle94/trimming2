@@ -57,7 +57,7 @@ trim5.add_argument('-m5', dest = 'min_residue5', type = check_pos, default = Fal
 					help = 'minimum of single residue trimming from 5end (type: pos int, default: False)') 
 trim5.add_argument('-a5', dest = 'mean_mw5', type = check_pos, default = False, 
 					help = 'mean of moving window trimming from 5end (type: pos int, default: False)') 
-trim3.add_argument('-w5', dest = 'min_mw5', type = check_pos, default = False,
+trim5.add_argument('-w5', dest = 'min_mw5', type = check_pos, default = False,
 					help = 'minimum of moving window trimming from 5end (type: pos int, default: False)')
 
 #add grouped argument for filtering settings
@@ -114,7 +114,7 @@ if args.logfile.endswith('txt'):
 		sys.stdout.write('Cannot open logfile, reason: ', + str(error) + '\n')
 		sys.exit()
 #add text to logfile
-print('Original file: ', args.filename, '\n', 'Trimmed file: ', args.outfilename, '\n', file = logfile)
+print('{:15}'.format('Original file:'), args.filename, '\n''{:15}'.format('Trimmed file:'), args.outfilename, '\n', file = logfile)
 
 
 
@@ -481,14 +481,14 @@ for line in infile:
 
 
 ####saving to log file
-print('Number of reads: ', read_count, file = logfile)
-print('Number of trimmed read: ', trim_count, file = logfile)
-print('Number of removed reads: ', removed_count, file = logfile)
+print('{:25}'.format('Number of reads:'), '{:>5}'.format(read_count), file = logfile)
+print('{:25}'.format('Number of trimmed reads:'), '{:>5}'.format(trim_count), file = logfile)
+print('{:25}'.format('Number of removed reads:'), '{:>5}'.format(removed_count), file = logfile)
 
 #calculate GC content
 GC = (float(count_g) + float(count_c)) / (float(count_a) + float(count_t) + float(count_g) + float(count_c) + float(count_n))
 #save nucleotide counts to logfile
-print('\nTotal nucleotide  counts\nA: ', count_a, '\nT: ', count_t, '\nG: ', count_g, '\nC: ', count_c, '\nGC content: ', GC, file = logfile)
+print('\nTotal nucleotide counts\nA:', count_a, '\nT:', count_t, '\nG:', count_g, '\nC:', count_c, '\nGC content:', '{:.2f}'.format(GC), file = logfile)
 
 #if there is sequences and quality data not matching
 if len(error_seq) != 0:

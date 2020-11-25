@@ -1,0 +1,17 @@
+Original file:  BRISCOE_0069_BD18RUACXX_L2_1_pf.fastq 
+Trimmed file:   outfile.fastq 
+
+Number of reads:           1000
+Number of trimmed reads:      0
+Number of filtered reads:   976
+Number of excluded reads:     0 (excluded reads are listed below)
+
+Total nucleotide counts
+A: 30339 
+T: 31751 
+G: 19289 
+C: 19406 
+GC content: 0.38
+
+Reads with non-matching sequence and quality data length (excluded from analysis):
+NA

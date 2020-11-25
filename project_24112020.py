@@ -332,9 +332,9 @@ trim5.add_argument('-w5', dest = 'min_mw5', type = check_pos, default = False,
 					help = 'minimum of moving window trimming from 5end (type: pos int, default: False)')
 
 #add grouped argument for filtering settings
-filtering = parser.add_argument_group('Filtering', description = 'Settings for filtering (default: min_mean_qual = 30, min_read_len = 50, max_N = 5)')
-filtering.add_argument('-q', dest = 'min_mean_qual', type = check_pos, default = 30,
-					help = 'minimum mean quality after trimming (default = 30)')
+filtering = parser.add_argument_group('Filtering', description = 'Settings for filtering (default: min_mean_qual = 20, min_read_len = 50, max_N = 5)')
+filtering.add_argument('-q', dest = 'min_mean_qual', type = check_pos, default = 20,
+					help = 'minimum mean quality after trimming (default = 20)')
 filtering.add_argument('-r', dest = 'min_read_len', type = check_pos, default = 50,
 					help = 'minimum read length after trimming (default = 50)')
 filtering.add_argument('-s', dest = 'max_N', type = check_pos, default = 5,
@@ -342,20 +342,20 @@ filtering.add_argument('-s', dest = 'max_N', type = check_pos, default = 5,
 
 #save argparse arguments to a name
 args = parser.parse_args()
-
+options = vars(args)
 
 
 ###################### READ FILES ###########################
 
 #read input file if filetype is gzipped fastq 
-if args.filename.endswith('fastq.gz'):
+if args.filename.endswith('.gz'):
 	try:
 		infile = gzip.open(args.filename,'rt')
 	except IOError as error:
 		sys.stdout.write('Cannot open inputfile, reason: ' + str(error) + '\n')
 		sys.exit(1)
 #read file if filetype is fastq
-elif args.filename.endswith('fastq'):
+elif args.filename.endswith('.fastq'):
 	try:
 		infile = open(args.filename, 'r')
 	except IOError as error:
@@ -477,11 +477,11 @@ for line in infile:
 			trim_count += 1
 
 		#Filter reads based on users input
-		read_mean_quality = calc_mean_quality(seq_qual_trim)	 #calculate mean quality after trimming 
-		for nuc, asci in seq_qual_trim:
+		read_mean_quality = calc_mean_quality(seq_qual_trim)	 	#calculate mean quality of read after trimming 
+		for nuc, asci in seq_qual_trim:								#calculate number of unknown nucleotides in read after trimming
 			count_n_trim += nuc.count('N')
 
-		if read_mean_quality < args.min_mean_qual or len(seq_qual_trim) < args.min_read_len or count_n_trim > 5:
+		if read_mean_quality < args.min_mean_qual or len(seq_qual_trim) < args.min_read_len or count_n_trim > args.max_N:
 			filtered_count += 1
 			#Reset and continue to next read with no saving of read to outfile
 			(header, seq, plusline, quality) = ('', '', '', '')
@@ -498,10 +498,13 @@ for line in infile:
 
 
 ####Saving to log file
-print('{:25}'.format('Number of reads:'), '{:>5}'.format(read_count), file = logfile)
-print('{:25}'.format('Number of trimmed reads:'), '{:>5}'.format(trim_count), file = logfile)
-print('{:25}'.format('Number of filtered reads:'), '{:>5}'.format(filtered_count), file = logfile)
-print('{:25}'.format('Number of excluded reads:'), '{:>5}'.format(excluded_count), '(excluded reads are listed below)', file = logfile)
+print('{:25}'.format('Settings for analysis'), file = logfile)
+[print(key, ':', value, file = logfile) for key, value in options.items()]
+print('\nCounts of reads in file', file = logfile)
+print('{:25}'.format('Number of reads in file:'), '{:>10}'.format(read_count), file = logfile)
+print('{:25}'.format('Number of trimmed reads:'), '{:>10}'.format(trim_count), file = logfile)
+print('{:25}'.format('Number of filtered reads:'), '{:>10}'.format(filtered_count), file = logfile)
+print('{:25}'.format('Number of excluded reads:'), '{:>10}'.format(excluded_count), '(excluded reads are listed below)', file = logfile)
 
 #Calculate GC content
 GC = (float(count_g) + float(count_c)) / (float(count_a) + float(count_t) + float(count_g) + float(count_c) + float(count_n))

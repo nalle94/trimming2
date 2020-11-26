@@ -16,7 +16,7 @@ def check_pos(value):
 		sys.exit()
 	return int_value
 
-def check_quality_cut(value):
+def check_qual_line_cut(value):
 	'''check if value is pos int or return defaultvalue if yes'''
 	if value == 'yes':
 		value = 0
@@ -32,17 +32,17 @@ def check_quality_cut(value):
 
 
 def detect_phred(filename):
-	'''detects phred score for sequences in file'''
+	'''detects phred score for seq_lineuences in file'''
 	#Set start
 	phred_scale = None 
-	qualityity_data = None
+	qual_lineity_data = None
 	line_count = 0
 	#iterate over file until scale is identified
 	while phred_scale == None:
 		for line in filename:
 			line = line.strip()
 			line_count += 1	
-			#identify qualityity score lines (every 4th)
+			#identify qual_lineity score lines (every 4th)
 			if line_count % 4 == 0:
 				for char in line:
 					#translate the line to find phred scales
@@ -50,251 +50,254 @@ def detect_phred(filename):
 						phred_scale = "phred+33"
 					elif char in phred64 and char not in phred33:
 						phred_scale = "phred+64"
-	#if program can not determine phred scale
+	#if program can not determine phred scale exit program
 	if phred_scale == None:
 		print("Cannot determine phred scale")
+		sys.exit(1)
 	return phred_scale	
 				  
 
-def trim_fixed(seq_qual, fixed_trim_val_5, fixed_trim_val_3):
+def trim_fixed(seq_line_qual, fixed_trim_5, fixed_trim_3):
 	'''Trim fixed number of nucleotides from 5' and 3' ends'''
 	count = 0
-	seq_trim_3 = ''
+	seq_line_trim_3 = ''
 	asci_trim_3 = ''
-	seq_trim_5 = ''
+	seq_line_trim_5 = ''
 	asci_trim_5 = ''
-	for nuc, asci in seq_qual:
-		if count < fixed_trim_val_5:
+	for nuc, asci in seq_line_qual:
+		if count < fixed_trim_5:
 			count += 1
 		else:
-			seq_trim_5 += nuc
+			seq_line_trim_5 += nuc
 			asci_trim_5 += asci
-	seq_qual_trim_5 = list(zip(seq_trim_5, asci_trim_5))
+	seq_line_qual_trim_5 = list(zip(seq_line_trim_5, asci_trim_5))
 	count = 0
-	for nuc, asci in seq_qual_trim_5[::-1]:
-		if count < fixed_trim_val_3:
+	for nuc, asci in seq_line_qual_trim_5[::-1]:
+		if count < fixed_trim_3:
 			count += 1
 		else:
-			seq_trim_3 += nuc
+			seq_line_trim_3 += nuc
 			asci_trim_3 += asci
 
-	seq_qual = list(zip(seq_trim_3[::-1], asci_trim_3[::-1]))
-	return seq_qual
+	seq_line_qual = list(zip(seq_line_trim_3[::-1], asci_trim_3[::-1]))
+	return seq_line_qual
 
 
-def trim_single_nuc_5(seq_qual, threshold):
-	'''Trim from 5' based on minimum qualityity of single nucleotides'''
-	seq_trim_5 = ''
+def trim_single_nuc_5(seq_line_qual, threshold):
+	'''Trim from 5' based on minimum qual_lineity of single nucleotides'''
+	seq_line_trim_5 = ''
 	asci_trim_5 = ''
-	for nuc,asci in seq_qual:
-		if phred_scale == 'phred+33':
-			if phred33[asci] < threshold and seq_trim_5 == '':
+	for nuc,asci in seq_line_qual:
+        #if asci not present in phred scale exit
+        try:
+            if phred[asci] < threshold and seq_line_trim_5 == '':
 				continue
-			else:
-				seq_trim_5 += nuc
-				asci_trim_5 += asci
-		elif phred_scale == 'phred+64':
-			if phred64[asci] < threshold and seq_trim_5 == '':
-				continue
-			else:
-				seq_trim_5 += nuc
-				asci_trim_5 += asci
+            else:
+                seq_line_trim_5 += nuc
+                asci_trim_5 += asci
+        except KeyError as error:
+            sys.stdout.write('Incorrect inputfile, reason: ' + str(error) + '\n')
+			sys.exit(1)	
 
-	seq_qual = list(zip(seq_trim_5, asci_trim_5))
-	return seq_qual
+	seq_line_qual = list(zip(seq_line_trim_5, asci_trim_5))
+	return seq_line_qual
 
 
-def trim_single_nuc_3(seq_qual, threshold):
-	'''Trim from 3' based on minimum qualityity of single nucleotides'''
-	seq_trim_3 = ''
+def trim_single_nuc_3(seq_line_qual, threshold):
+	'''Trim from 3' based on minimum qual_lineity of single nucleotides'''
+	seq_line_trim_3 = ''
 	asci_trim_3 = ''
-	for nuc,asci in seq_qual[::-1]:
-		if phred_scale == 'phred+33':
-			if phred33[asci] < threshold and seq_trim_3 == '':
-				continue
-			else:
-				seq_trim_3 += nuc
-				asci_trim_3 += asci
-		elif phred_scale == 'phred+64':			
-			if phred64[asci] < threshold and seq_trim_3 == '':
-				continue
-			else:
-				seq_trim_3 += nuc
-				asci_trim_3 += asci	
-
-	seq_qual = list(zip(seq_trim_3[::-1], asci_trim_3[::-1]))
-	return seq_qual
+	for nuc,asci in seq_line_qual[::-1]:
+        #if asci not present in phred scale exit
+        try:
+            if phred[asci] < threshold and seq_line_trim_3 == '':
+                continue
+            else:
+                seq_line_trim_3 += nuc
+                asci_trim_3 += asci
+        except KeyError as error:
+            sys.stdout.write('Incorrect inputfile, reason: ' + str(error) + '\n')
+			sys.exit(1)	
+	seq_line_qual = list(zip(seq_line_trim_3[::-1], asci_trim_3[::-1]))
+	return seq_line_qual
 
 
-def trim_moving_window_5(seq_qual, threshold):
+def trim_moving_window_5(seq_line_qual, threshold):
 	'''Trim from 5' based on average of moving window of size 5'''
-	seq_trimmed = ''
+	seq_line_trimmed = ''
 	asci_trimmed = ''
 	window_size = 5
 	i = 0
-	if len(seq_qual) >= window_size:
-		while i < len(seq_qual) - window_size + 1:
+	if len(seq_line_qual) >= window_size:
+		while i < len(seq_line_qual) - window_size + 1:
 			sum_window = 0
-			window = seq_qual[i:i + window_size]
+			window = seq_line_qual[i:i + window_size]
 			for nuc,asci in window:
-				if phred_scale == 'phred+33':
-					sum_window += phred33[asci]
-				elif phred_scale == 'phred+64':
-					sum_window += phred64[asci]
+                #if asci not present in phred scale, exit
+                try:
+                    sum_window += phred[asci]
+                except KeyError as error:
+                    sys.stdout.write('Incorrect inputfile, reason: ' + str(error) + '\n')
+                    sys.exit(1)	
 			window_average = sum_window/window_size
-			if window_average < threshold and seq_trimmed == '':
+			if window_average < threshold and seq_line_trimmed == '':
 				i += 1
 				continue
 			else:
 				i += 1
-				seq_trimmed += window[0][0]
-				asci_trimmed += window[0][1]
-					
-		#Add remaining 3' nucleotides to trimmed sequence
+				seq_line_trimmed += window[0][0]
+				asci_trimmed += window[0][1]			
+		#Add remaining 3' nucleotides to trimmed seq_lineuence
 		for nuc,asci in window[1:]:
-			seq_trimmed += nuc
+			seq_line_trimmed += nuc
 			asci_trimmed += asci
 	#if there is less nucleotides left than the size of window
 	else:
-		for nuc,asci in seq_qual:
-			seq_trimmed += nuc
+		for nuc,asci in seq_line_qual:
+			seq_line_trimmed += nuc
 			asci_trimmed += asci
 			
-	seq_qual = list(zip(seq_trimmed, asci_trimmed))
-	return seq_qual
+	seq_line_qual = list(zip(seq_line_trimmed, asci_trimmed))
+	return seq_line_qual
 
 
-def trim_moving_window_3(seq_qual, threshold):
+def trim_moving_window_3(seq_line_qual, threshold):
 	'''Trim from 3' based on average of moving window of size 5'''
-	seq_trimmed = ''
+	seq_line_trimmed = ''
 	asci_trimmed = ''
 	window_size = 5
 	i = 0
-	seq_qual = seq_qual[::-1]
-	if len(seq_qual) >= window_size:
-		while i < len(seq_qual) - window_size + 1:
+	seq_line_qual = seq_line_qual[::-1]
+	if len(seq_line_qual) >= window_size:
+		while i < len(seq_line_qual) - window_size + 1:
 			sum_window = 0
-			window = seq_qual[i:i + window_size]
-			for nuc,asci in window:
-				if phred_scale == 'phred+33':
-					sum_window += phred33[asci]
-				elif phred_scale == 'phred+64':
-					sum_window += phred64[asci]
+			window = seq_line_qual[i:i + window_size]
+            #if asci not present in phred scale, exit
+			try:
+                for nuc,asci in window:
+                    sum_window += phred[asci]
+            except KeyError as error:
+                sys.stdout.write('Incorrect inputfile, reason: ' + str(error) + '\n')
+                sys.exit(1)	  
 			window_average = sum_window/window_size
-			if window_average < threshold and seq_trimmed == '':
+			if window_average < threshold and seq_line_trimmed == '':
 				i += 1
 				continue
 			else:
 				i += 1
-				seq_trimmed += window[0][0]
+				seq_line_trimmed += window[0][0]
 				asci_trimmed += window[0][1]
 			
-		#Add remaining 5' nucleotides to trimmed sequence
+		#Add remaining 5' nucleotides to trimmed seq_lineuence
 		for nuc,asci in window[1:]:
-			seq_trimmed += nuc
+			seq_line_trimmed += nuc
 			asci_trimmed += asci
 	#if there is less nucleotides left than the size of window
 	else:
-		for nuc,asci in seq_qual:
-			seq_trimmed += nuc
+		for nuc,asci in seq_line_qual:
+			seq_line_trimmed += nuc
 			asci_trimmed += asci
 
-	seq_qual = list(zip(seq_trimmed[::-1], asci_trimmed[::-1]))
-	return seq_qual
+	seq_line_qual = list(zip(seq_line_trimmed[::-1], asci_trimmed[::-1]))
+	return seq_line_qual
 
 
-def trim_min_moving_window_5(seq_qual, threshold):
+def trim_min_moving_window_5(seq_line_qual, threshold):
 	'''Trim from 5' based on minimum of moving window of size 5'''
-	seq_trimmed = ''
+	seq_line_trimmed = ''
 	asci_trimmed = ''
 	window_size = 5
 	i = 0
-	if len(seq_qual) >= window_size:
-		while i < len(seq_qual) - window_size + 1:
-			quality_window = list()
-			window = seq_qual[i:i + window_size]
+	if len(seq_line_qual) >= window_size:
+		while i < len(seq_line_qual) - window_size + 1:
+			qual_line_window = list()
+			window = seq_line_qual[i:i + window_size]
 			for nuc,asci in window:
-				if phred_scale == 'phred+33':
-					quality_window.append(phred33[asci])
-				else:
-					quality_window.append(phred64[asci])
-			if min(quality_window) < threshold and seq_trimmed == '':
+                #if asci not present in phred scale, exit
+                try:
+                    qual_line_window.append(phred[asci])
+                except KeyError as error:
+                    sys.stdout.write('Incorrect inputfile, reason: ' + str(error) + '\n')
+                    sys.exit(1)	
+			if min(qual_line_window) < threshold and seq_line_trimmed == '':
 				i += 1
 				continue
 			else:
 				i += 1
-				seq_trimmed += window[0][0]
+				seq_line_trimmed += window[0][0]
 				asci_trimmed += window[0][1]
-		#Add remaining 3' nucleotides to trimmed sequence
+		#Add remaining 3' nucleotides to trimmed seq_lineuence
 		for nuc,asci in window[1:]:
-			seq_trimmed += nuc
+			seq_line_trimmed += nuc
 			asci_trimmed += asci
 	#if there is less nucleotides left than the size of window
 	else:
-		for nuc,asci in seq_qual:
-			seq_trimmed += nuc
+		for nuc,asci in seq_line_qual:
+			seq_line_trimmed += nuc
 			asci_trimmed += asci
 			
-	seq_qual = list(zip(seq_trimmed, asci_trimmed))
-	return seq_qual
+	seq_line_qual = list(zip(seq_line_trimmed, asci_trimmed))
+	return seq_line_qual
 
 
-def trim_min_moving_window_3(seq_qual, threshold):
+def trim_min_moving_window_3(seq_line_qual, threshold):
 	'''Trim from 3' based on minimum of moving window of size 5'''
-	seq_trimmed = ''
+	seq_line_trimmed = ''
 	asci_trimmed = ''
 	window_size = 5
 	i = 0
-	seq_qual = seq_qual[::-1]
-	if len(seq_qual) >= window_size:
-		while i < len(seq_qual) - window_size + 1:
-			quality_window = list()
-			window = seq_qual[i:i + window_size]
+	seq_line_qual = seq_line_qual[::-1]
+	if len(seq_line_qual) >= window_size:
+		while i < len(seq_line_qual) - window_size + 1:
+			qual_line_window = list()
+			window = seq_line_qual[i:i + window_size]
 			for nuc,asci in window:
-				if phred_scale == 'phred+33':
-					quality_window.append(phred33[asci])
-				else:
-					quality_window.append(phred64[asci])
-			if min(quality_window) < threshold and seq_trimmed == '':
+            #if asci not present in phred scale, exit
+                try:
+                    qual_line_window.append(phred[asci])
+                except KeyError as error:
+                    sys.stdout.write('Incorrect inputfile, reason: ' + str(error) + '\n')
+                    sys.exit(1)	
+			if min(qual_line_window) < threshold and seq_line_trimmed == '':
 				i += 1
 				continue
 			else:
 				i += 1
-				seq_trimmed += window[0][0]
+				seq_line_trimmed += window[0][0]
 				asci_trimmed += window[0][1]
 
-		#Add remaining 5' nucleotides to trimmed sequence
+		#Add remaining 5' nucleotides to trimmed seq_lineuence
 		for nuc,asci in window[1:]:
-			seq_trimmed += nuc
+			seq_line_trimmed += nuc
 			asci_trimmed += asci
 	#if there is less nucleotides left than the size of window
 	else:
-		for nuc,asci in seq_qual:
-			seq_trimmed += nuc
+		for nuc,asci in seq_line_qual:
+			seq_line_trimmed += nuc
 			asci_trimmed += asci
 			
-	seq_qual = list(zip(seq_trimmed, asci_trimmed))
-	return seq_qual
+	seq_line_qual = list(zip(seq_line_trimmed, asci_trimmed))
+	return seq_line_qual
 
 
-def calc_mean_quality(seq_qual):
-	'''Calculate mean qualityity of read'''
-	sum_quality_read = 0
-	if len(seq_qual) != 0:
-		if phred_scale == 'phred+33':
-			for nuc, asci in seq_qual:
-				sum_quality_read += phred33[asci]
-			average_read_quality = sum_quality_read / len(seq_qual)
-		elif phred_scale == 'phred+64':
-			for nuc,asci in seq_qual:
-				sum_quality_read += phred64[asci]
-			average_read_quality = sum_quality_read / len(seq_qual)
-	#if there is no quality data the mean is 0
+def calc_mean_qual_line(seq_line_qual):
+	'''Calculate mean qual_lineity of read'''
+	sum_qual_line_read = 0
+	if len(seq_line_qual) != 0:
+		for nuc, asci in seq_line_qual:
+            #if asci not present in phred scale exit
+            try:
+                sum_qual_line_read += phred[asci]
+            except KeyError as error:
+                sys.stdout.write('Incorrect inputfile, reason: ' + str(error) + '\n')
+                sys.exit(1)	
+		average_read_qual_line = sum_qual_line_read / len(seq_line_qual)
+	#if there is no qual_line data the mean is 0
 	else:
-		average_read_quality = 0
-	return int(average_read_quality)
-    
-    
+		average_read_qual_line = 0
+	return int(average_read_qual_line)
+	
+	
 
 ###################### ARGUMENT LINE ######################
 	
@@ -308,11 +311,12 @@ parser.add_argument('-p', dest = 'phred_scale', choices = ['phred+33', 'phred+64
 					help = 'phred scale (type: phred+33 or phred+64)') 
 parser.add_argument('-l', dest = 'logfile', default = 'logfile.txt', type = str,
 					help = 'log filename. Need to be a txt file (default: logfile.txt)')
-parser.add_argument('-t', dest = 'fixed_trim_val', nargs = 2, default = [0,0], type = check_pos, 
-					help = 'what fixed base length to trim from each end (type: space seperated string of pos int of length 2. First value is from 3end, second is from 5end')
+
 
 #add mutually exclusive argument for 3' end trimming
 trim_group1 = parser.add_argument_group('Trimming from 3end', description = 'Settings for trimming from 3end. Only one trimming option can be performed from each end. If no options are entered, no trimming will be performed')
+trim_group1.add_argument('-t3', dest = 'fixed_trim3', default = False, type = check_pos, 
+					help = 'what fixed base length to trim (type: pos int)')
 trim3 = trim_group1.add_mutually_exclusive_group()
 trim3.add_argument('-m3', dest = 'min_residue3', type = check_pos, default = False, 
 					help = 'minimum of single residue trimming from 3end (type: pos int, default: False)') 
@@ -321,8 +325,12 @@ trim3.add_argument('-a3', dest = 'mean_mw3', type = check_pos, default = False,
 trim3.add_argument('-w3', dest = 'min_mw3', type = check_pos, default = False,
 					help = 'minimum of moving window trimming from 3end (type: pos int, default: False)')
 
+
+
 #add mutually exclusive argument for 5' end trimming
 trim_group2 = parser.add_argument_group('Trimming from 5end', description = 'Settings for trimming from 5end. Only one trimming option can be performed from each end. If no options are entered, no trimming will be performed')
+trim_group2.add_argument('-t5', dest = 'fixed_trim5', default = False, type = check_pos, 
+					help = 'what fixed base length to trim (type: pos int)')
 trim5 = trim_group2.add_mutually_exclusive_group()
 trim5.add_argument('-m5', dest = 'min_residue5', type = check_pos, default = False, 
 					help = 'minimum of single residue trimming from 5end (type: pos int, default: False)') 
@@ -334,7 +342,7 @@ trim5.add_argument('-w5', dest = 'min_mw5', type = check_pos, default = False,
 #add grouped argument for filtering settings
 filtering = parser.add_argument_group('Filtering', description = 'Settings for filtering (default: min_mean_qual = 20, min_read_len = 50, max_N = 5)')
 filtering.add_argument('-q', dest = 'min_mean_qual', type = check_pos, default = 20,
-					help = 'minimum mean quality after trimming (default = 20)')
+					help = 'minimum mean qual_line after trimming (default = 20)')
 filtering.add_argument('-r', dest = 'min_read_len', type = check_pos, default = 50,
 					help = 'minimum read length after trimming (default = 50)')
 filtering.add_argument('-s', dest = 'max_N', type = check_pos, default = 5,
@@ -415,86 +423,110 @@ if args.phred_scale == None:
 	phred_scale = detect_phred(infile)
 	#go back to beginning of file
 	infile.seek(0)
+ #if phred scale is given
+else:
+	phred_scale = args.phred_scale
 	
+ 
 #Initialize
-(read_count, trim_count, filtered_count, excluded_count, line_count) = (0, 0, 0, 0, 0)
+(read_count, trim_count, filtered_count, excluded_count, line_count, old_nuc_sum) = (0, 0, 0, 0, 0)
 (count_n, count_a, count_c, count_g, count_t, count_n_trim)= (0, 0, 0, 0, 0, 0)
-(header, seq, plusline, quality) = ('', '', '', '')
-error_seq = []
+(header, seq_line, plus_line, qual_line) = ('', '', '', '')
+error_seq_line = []
 
-#read one sequence at a time and sort lines
+#read one seq_lineuence at a time and sort lines
 for line in infile:
 	line = line.strip()
 	line_count += 1
-	#Identify header, sequence and qualityity data for read
+	#Identify header, seq_lineuence and qual_lineity data for read
 	if line_count % 4 == 1:
 		header = line
+		#if header does not start with @ make error in filetype
+		try:
+			True == header.startswith('@') 
+		except IOerror as error:
+			sys.stdout.write('Incorrect inputfile, reason: ' + str(error) + '\n')
+			sys.exit(1)
 	elif line_count % 4 == 2:
-		seq = line
+		seq_line = line
 	elif line_count % 4 == 3:
-		plusline = line
+		plus_line = line
+		#if 3. line does not start with + make error in filetype
+		try:
+			True == plus_line.startswith('+') 
+		except IOerror as error:
+			sys.stdout.write('Incorrect inputfile, reason: ' + str(error) + '\n')
+			sys.exit(1)
 	elif line_count % 4 == 0:
-		quality = line
+		qual_line = line
 
-	#If sequence and qualityity data are both containing data - trimming functions are performed according to arguments from command line
-	if seq != '' and quality != '':
-		#If length of seq and quality data is not the same, the read is not trimmed or saved to outfile
-		if len(seq) != len(quality):
-			error_seq.append(header)
-			read_count += 1
-			excluded_count += 1
-			(header, seq, plusline, quality) = ('', '', '', '')
-			continue
-		seq_qual = list(zip(seq, quality))
+	#If seq_lineuence and qual_lineity data are both containing data - trimming functions are performed according to arguments from command line
+	if seq_line != '' and qual_line != '':
+
+		#naem phred scale
+		if phred_scale == 'phred+33':
+			phred = phred33
+		elif phred_scale == 'phred+64':
+			phred = phred64
 		#Count number of nucleotides in input file
-		for nuc, asci in seq_qual:
+		for nuc, asci in seq_line_qual:
 			count_n += nuc.count('N')
 			count_a += nuc.count('A')
 			count_c += nuc.count('C')
 			count_g += nuc.count('G')
 			count_t += nuc.count('T')
+        #error check if sequence only contains A, T, C, G or N by calculating the sum and see if it matchen len of line
+        if (len(seq_line) + old_nuc_sum) != count_n + count_a + count_t + count_c + count_g + count_n:
+            raise IOError('Wrong symbol in sequnence line of read: ' + header + ', only A, C, T, G and N are allowed\n')
+            sys.exit(1)
+        #make new old nucleotide count
+        old_nuc_sum = new_nuc_sum
+		#If length of seq_line and qual_line data is not the same, the read is not trimmed or saved to outfile
+		if len(seq_line) != len(qual_line):
+            raise IOError('Length of sequence and quality data does not match in read: ' + header)
+		seq_line_qual = list(zip(seq_line, qual_line))        
 		#Trim fixed number of nucleotides from 5' end
-		seq_qual_trim = trim_fixed(seq_qual, args.fixed_trim_val[0], args.fixed_trim_val[0])
-		#Trim based on qualityity of nucleotides from 5' end
+		seq_line_qual_trim = trim_fixed(seq_line_qual, args.fixed_trim5, args.fixed_trim3)
+		#Trim based on qual_lineity of nucleotides from 5' end
 		if args.min_residue5:
-			seq_qual_trim = trim_single_nuc_5(seq_qual_trim, args.min_residue5)
+			seq_line_qual_trim = trim_single_nuc_5(seq_line_qual_trim, args.min_residue5)
 		elif args.mean_mw5:
-			seq_qual_trim = trim_moving_window_5(seq_qual_trim, args.mean_mw5)
+			seq_line_qual_trim = trim_moving_window_5(seq_line_qual_trim, args.mean_mw5)
 		elif args.min_mw5:
-			seq_qual_trim = trim_min_moving_window_5(seq_qual_trim, args.min_mw3)
-		#Trim based on qualityity of nucleotides from 3' end
+			seq_line_qual_trim = trim_min_moving_window_5(seq_line_qual_trim, args.min_mw3)
+		#Trim based on qual_lineity of nucleotides from 3' end
 		if args.min_residue3:
-			seq_qual_trim = trim_single_nuc_3(seq_qual_trim, args.min_residue3)
+			seq_line_qual_trim = trim_single_nuc_3(seq_line_qual_trim, args.min_residue3)
 		elif args.mean_mw3:
-			seq_qual_trim = trim_moving_window_3(seq_qual_trim, args.mean_mw3)
+			seq_line_qual_trim = trim_moving_window_3(seq_line_qual_trim, args.mean_mw3)
 		elif args.min_mw3:
-			seq_qual_trim = trim_min_moving_window_3(seq_qual_trim, args.min_mw3)
+			seq_line_qual_trim = trim_min_moving_window_3(seq_line_qual_trim, args.min_mw3)
 
 		#Increase read count by 1
 		read_count += 1
 		#Count number of trimmed reads
-		if len(seq_qual_trim) < len(seq_qual):
+		if len(seq_line_qual_trim) < len(seq_line_qual):
 			trim_count += 1
 
 		#Filter reads based on users input
-		read_mean_quality = calc_mean_quality(seq_qual_trim)	 	#calculate mean quality of read after trimming 
-		for nuc, asci in seq_qual_trim:								#calculate number of unknown nucleotides in read after trimming
+		read_mean_qual_line = calc_mean_qual_line(seq_line_qual_trim)	 	#calculate mean qual_line of read after trimming 
+		for nuc, asci in seq_line_qual_trim:								#calculate number of unknown nucleotides in read after trimming
 			count_n_trim += nuc.count('N')
 
-		if read_mean_quality < args.min_mean_qual or len(seq_qual_trim) < args.min_read_len or count_n_trim > args.max_N:
+		if read_mean_qual_line < args.min_mean_qual or len(seq_line_qual_trim) < args.min_read_len or count_n_trim > args.max_N:
 			filtered_count += 1
 			#Reset and continue to next read with no saving of read to outfile
-			(header, seq, plusline, quality) = ('', '', '', '')
+			(header, seq_line, plus_line, qual_line) = ('', '', '', '')
 			continue
 
 		#Print read to outfile
-		seq_qual_sep = list(zip(*seq_qual_trim))
+		seq_line_qual_sep = list(zip(*seq_line_qual_trim))
 		print(header, file = outfile)
-		print(''.join(seq_qual_sep[0]), file = outfile)
-		print(plusline, file = outfile)
-		print(''.join(seq_qual_sep[1]), file = outfile)
-		#Reset seq and quality for next read
-		(header, seq, plusline, quality) = ('', '', '', '')
+		print(''.join(seq_line_qual_sep[0]), file = outfile)
+		print(plus_line, file = outfile)
+		print(''.join(seq_line_qual_sep[1]), file = outfile)
+		#Reset seq_line and qual_line for next read
+		(header, seq_line, plus_line, qual_line) = ('', '', '', '')
 
 
 ####Saving to log file
@@ -507,16 +539,10 @@ print('{:25}'.format('Number of filtered reads:'), '{:>10}'.format(filtered_coun
 print('{:25}'.format('Number of excluded reads:'), '{:>10}'.format(excluded_count), '(excluded reads are listed below)', file = logfile)
 
 #Calculate GC content
-GC = (float(count_g) + float(count_c)) / (float(count_a) + float(count_t) + float(count_g) + float(count_c) + float(count_n))
+GC = (float(count_g) + float(count_c)) / float(old_nuc_count)
 #save nucleotide counts to logfile
 print('\nTotal nucleotide counts\nA:', count_a, '\nT:', count_t, '\nG:', count_g, '\nC:', count_c, '\nGC content:', '{:.2f}'.format(GC), file = logfile)
 
-#If there are reads, where sequences and quality data don't match
-print('\nReads with non-matching sequence and quality data length (excluded from analysis):', file = logfile)
-if len(error_seq) != 0:
-	print('\n'.join(error_seq), file = logfile)
-else:
-	print('NA', file = logfile)
 
 ####close files####
 infile.close()

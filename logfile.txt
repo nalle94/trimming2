@@ -1,35 +1,3 @@
 Original file:  BRISCOE_0069_BD18RUACXX_L2_1_pf.fastq 
 Trimmed file:   outfile.fastq 
 
-Settings for analysis    
-filename : BRISCOE_0069_BD18RUACXX_L2_1_pf.fastq
-outfilename : outfile.fastq
-phred_scale : None
-logfile : logfile.txt
-fixed_trim3 : False
-min_residue3 : False
-mean_mw3 : False
-min_mw3 : False
-fixed_trim5 : False
-min_residue5 : 5
-mean_mw5 : False
-min_mw5 : False
-min_mean_qual : 20
-min_read_len : 50
-max_N : 5
-
-Counts of reads in file
-Number of reads in file:        1000
-Number of trimmed reads:         215
-Number of filtered reads:          7
-Number of excluded reads:          0 (excluded reads are listed below)
-
-Total nucleotide counts
-A: 30339 
-T: 31751 
-G: 19289 
-C: 19406 
-GC content: 0.38
-
-Reads with non-matching seq_lineuence and qual_line data length (excluded from analysis):
-NA

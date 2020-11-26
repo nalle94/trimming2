@@ -434,6 +434,7 @@ else:
  
 #Initialize
 (read_count, trim_count, filtered_count, excluded_count, line_count, nuc_sum) = (0, 0, 0, 0, 0,0)
+(header, seq, plus, qual, seq_qual_trim) = ('', '', '', '','')
 (count_n, count_a, count_c, count_g, count_t, count_n_trim)= (0, 0, 0, 0, 0, 0)
 error_seq = []
 
@@ -442,7 +443,6 @@ for line in infile:
 	line = line.strip()
 	line_count += 1
 	#initialize values
-	(header, seq, plus, qual, seq_qual_trim) = ('', '', '', '','')
 	#Identify header, sequence and quality data for read
 	if line_count % 4 == 1:
 		header = line
@@ -481,11 +481,10 @@ for line in infile:
 			count_g += nuc.count('G')
 			count_t += nuc.count('T')
 		#error check if sequence only contains A, T, C, G or N by calculating the sum and see if it matchen len of line
-		if (len(seq) + old_nuc_sum) != count_a + count_t + count_c + count_g + count_n:
+		if (len(seq) + nuc_sum) != count_a + count_t + count_c + count_g + count_n:
 			raise IOError('Wrong symbol in sequnence line of read: ' + header + ', only A, C, T, G and N are allowed\n')
 			sys.exit(1)
 		#make new old nucleotide count
-		print(seq)
 		nuc_sum += len(seq)
 		#If length of seq and qual data is not the same, the read is not trimmed or saved to outfile
 		if len(seq) != len(qual):
@@ -522,7 +521,8 @@ for line in infile:
 
 		if read_mean_qual < args.min_mean_qual or len(seq_qual_trim) < args.min_read_len or count_n_trim > args.max_N:
 			filtered_count += 1
-			#continue to next read with no saving of read to outfile
+			#reset abd continue to next read with no saving of read to outfile
+			(header, seq, plus, qual, seq_qual_trim) = ('', '', '', '','')
 			continue
 
 		#Print read to outfile
@@ -531,7 +531,9 @@ for line in infile:
 		print(''.join(seq_qual_sep[0]), file = outfile)
 		print(plus, file = outfile)
 		print(''.join(seq_qual_sep[1]), file = outfile)
-
+		
+		#reset 
+		(header, seq, plus, qual, seq_qual_trim) = ('', '', '', '','')
 
 ####Saving to log file
 print('{:25}'.format('Settings for analysis'), file = logfile)

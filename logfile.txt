@@ -19,7 +19,14 @@ min_read_len : 50
 max_N : 5
 
 Counts of reads in file
-Number of reads in file:           0
-Number of trimmed reads:           0
-Number of filtered reads:          0
+Number of reads in file:        1000
+Number of trimmed reads:        1000
+Number of filtered reads:       1000
 Number of excluded reads:          0 (excluded reads are listed below)
+
+Total nucleotide counts
+A: 30339 
+T: 31751 
+G: 19289 
+C: 19406 
+GC content: 0.38

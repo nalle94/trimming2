@@ -536,6 +536,7 @@ phred64 = {
 
 #Detect phred score encoding from input file - if not given as input argument
 if args.phred_scale == None:
+	#O(n*m), where n is number of reads in the file and m is number of nucleotides per read
 	phred_scale = detect_phred(infile)
 	#Reset position in file to beginning of file
 	infile.seek(0)
@@ -556,6 +557,7 @@ elif phred_scale == 'phred+64':
 seq_length = list()
 
 #Read one sequence at a time - 4 lines
+#O(n), where n is number of reads in the file
 for line in infile:
 	line = line.strip()
 	line_count += 1
@@ -607,17 +609,17 @@ for line in infile:
 
 			seq_qual_trim = seq_qual[:]
 
-			#Trim fixed number of nucleotides
+			#Trim fixed number of nucleotides - O(2m), where m is number of nucleotides per read
 			if args.fixed_trim5 or args.fixed_trim3:
 				seq_qual_trim = trim_fixed(seq_qual_trim, args.fixed_trim5, args.fixed_trim3)
-			#Trim based on quality of nucleotides from 5' end
+			#Trim based on quality of nucleotides from 5' end - O(m), where m is number of nucleotides per read
 			if args.min_residue5:
 				seq_qual_trim = trim_single_nuc_5(seq_qual_trim, args.min_residue5)
 			elif args.mean_mw5:
 				seq_qual_trim = trim_moving_window_5(seq_qual_trim, args.mean_mw5)
 			elif args.min_mw5:
 				seq_qual_trim = trim_min_moving_window_5(seq_qual_trim, args.min_mw3)
-			#Trim based on quality of nucleotides from 3' end
+			#Trim based on quality of nucleotides from 3' end  - O(m), where m is number of nucleotides per read
 			if args.min_residue3:
 				seq_qual_trim = trim_single_nuc_3(seq_qual_trim, args.min_residue3)
 			elif args.mean_mw3:
@@ -632,7 +634,7 @@ for line in infile:
 			if len(seq_qual_trim) < len(seq_qual):
 				trim_count += 1
 
-			#Filter reads based on users input
+			#Filter reads based on users input - O(m), where m is number of nucleotides per read
 			read_mean_qual = calc_mean_qual(seq_qual_trim)	 		#Calculate mean quality of read after trimming 
 			for nuc, asci in seq_qual_trim:							#Calculate number of unknown nucleotides in read after trimming
 				count_n_trim += nuc.count('N')

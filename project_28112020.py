@@ -424,13 +424,15 @@ def calc_mean_qual(seq_qual):
 	
 	
 
-############### DEFINING ARGUMENTS USING ARGPARSE ###############
-	
+######################### MAIN PROGRAM ##########################
+
+#### ARGUMENT LINE ####
 #Read argument line	
 parser = argparse.ArgumentParser(description = 'Trimming of fastq file.')
 optional = parser._action_groups.pop()
-required = parser.add_argument_group('Required arguments')
 
+#Add file arguments
+required = parser.add_argument_group('Required arguments')
 required.add_argument('-f', dest = 'filename', required = True, 
 					help = 'input fastq filename for trimming (type: .fastq or txt.gz)')
 required.add_argument('-o', dest = 'outfilename', required = True, 
@@ -440,7 +442,6 @@ optional.add_argument('-p', dest = 'phred_scale', choices = ['phred+33', 'phred+
 optional.add_argument('-l', dest = 'logfile', default = 'logfile.txt', type = str,
 					help = 'log filename. Need to be a txt file (default: logfile.txt)')
 parser._action_groups.append(optional)
-
 
 #Add mutually exclusive argument for 5' end trimming
 trim_group1 = parser.add_argument_group('Trimming from 5end', description = 'Settings for trimming from 5end. Except from fixed_trim_5 - only one trimming option can be performed from each end. If no options are entered, no trimming will be performed')
@@ -454,7 +455,6 @@ trim5.add_argument('-a5', dest = 'mean_mw5', type = check_pos, default = False,
 trim5.add_argument('-w5', dest = 'min_mw5', type = check_pos, default = False,
 					help = 'minimum of moving window trimming from 5end (type: pos int, default: False)')
 
-
 #Add mutually exclusive argument for 3' end trimming
 trim_group2 = parser.add_argument_group('Trimming from 3end', description = 'Settings for trimming from 3end. Except from fixed_trim_3 - only one trimming option can be performed from each end. If no options are entered, no trimming will be performed')
 trim_group2.add_argument('-t3', dest = 'fixed_trim3', default = False, type = check_pos, 
@@ -466,7 +466,6 @@ trim3.add_argument('-a3', dest = 'mean_mw3', type = check_pos, default = False,
 					help = 'mean of moving window trimming from 3end (type: pos int, default: False)')   
 trim3.add_argument('-w3', dest = 'min_mw3', type = check_pos, default = False,
 					help = 'minimum of moving window trimming from 3end (type: pos int, default: False)')
-
 
 #Add grouped argument for filtering settings
 filtering = parser.add_argument_group('Filtering', description = 'Settings for filtering after trimming of read')
@@ -482,8 +481,7 @@ args = parser.parse_args()
 options = vars(args)
 
 
-########## READ FILES ##########
-
+#### READ FILES ####
 #Read input filename according to file type
 try:
 	if args.filename.endswith('txt.gz'):
@@ -504,7 +502,6 @@ except IOError as error:
 	sys.stdout.write('Cannot open outfile, reason: ' + str(error) + '\n')
 	sys.exit(1)
   
-
 #Read logfile
 if args.logfile.endswith('.txt'):
 	logfile = open(args.logfile, 'w')
@@ -516,8 +513,8 @@ print('{:15}'.format('Original file:'), args.filename, '\n''{:15}'.format('Trimm
 
 
 
-########### DIFFERENT PHRED SCORE ENCODINGS ###########
-
+#### DETECT PHRED SCORE ####
+#phred scales
 phred33 = {
 	'!': 0, '"': 1, '#': 2, '$': 3, '%': 4, '&': 5, "'": 6, '(': 7, ')': 8, '*': 9, 
 	'+': 10, ',': 11, '-': 12, '.': 13, '/': 14, '0': 15, '1': 16, '2': 17, '3': 18, '4': 19,
@@ -530,9 +527,6 @@ phred64 = {
 	'T': 20, 'U': 21, 'V': 22, 'W': 23, 'X': 24, 'Y': 25, 'Z': 26, '[': 27, '\\': 28, ']': 29,
 	'^': 30, '_': 31, '`': 32, 'a': 33, 'b': 34, 'c': 35, 'd': 36, 'e': 37, 'f': 38, 'g': 39, 
 	'h': 40, 'i': 41}
-
-
-########## MAIN PROGRAM ##########
 
 #Detect phred score encoding from input file - if not given as input argument
 if args.phred_scale == None:
@@ -550,6 +544,7 @@ elif phred_scale == 'phred+64':
 	phred = phred64
 
 
+#### TRIMMING AND FILTERING ####
 #Initialize
 (read_count, trim_count, filtered_count, line_count, nuc_sum) = (0, 0, 0, 0, 0)
 (header, seq, plus, qual, seq_qual_trim) = ('', '', '', '', '')
@@ -660,7 +655,7 @@ for line in infile:
 		sys.exit(1)
 
 		
-#Saving data to logfile
+#### SAVING TO LOGFILE ####
 print('{:25}'.format('Settings for analysis'), file = logfile)
 [print(key, ':', value, file = logfile) for key, value in options.items()]
 print('\nCounts of reads in file', file = logfile)

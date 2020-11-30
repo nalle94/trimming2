@@ -302,9 +302,9 @@ def calc_mean_qual(seq_qual):
 	return int(average_read_qual)
 	
 	
+###################### MAIN PROGRAM #######################
 
-###################### ARGUMENT LINE ######################
-	
+#### ARGUMENT LINE ####
 #read argument line	
 parser = argparse.ArgumentParser(description = 'Trimming of fastq file.')
 parser.add_argument('-f', dest = 'filename', required = True, 
@@ -315,7 +315,6 @@ parser.add_argument('-p', dest = 'phred_scale', choices = ['phred+33', 'phred+64
 					help = 'phred scale (type: phred+33 or phred+64)') 
 parser.add_argument('-l', dest = 'logfile', default = 'logfile.txt', type = str,
 					help = 'log filename. Need to be a txt file (default: logfile.txt)')
-
 
 #add mutually exclusive argument for 3' end trimming
 trim_group1 = parser.add_argument_group('Trimming from 3end', description = 'Settings for trimming from 3end. Only one trimming option can be performed from each end. If no options are entered, no trimming will be performed')
@@ -328,8 +327,6 @@ trim3.add_argument('-a3', dest = 'mean_mw3', type = check_pos, default = False,
 					help = 'mean of moving window trimming from 3end (type: pos int, default: False)')   
 trim3.add_argument('-w3', dest = 'min_mw3', type = check_pos, default = False,
 					help = 'minimum of moving window trimming from 3end (type: pos int, default: False)')
-
-
 
 #add mutually exclusive argument for 5' end trimming
 trim_group2 = parser.add_argument_group('Trimming from 5end', description = 'Settings for trimming from 5end. Only one trimming option can be performed from each end. If no options are entered, no trimming will be performed')
@@ -357,8 +354,7 @@ args = parser.parse_args()
 options = vars(args)
 
 
-###################### READ FILES ###########################
-
+#### READ FILES ####
 #read input file if filetype is gzipped fastq 
 if args.filename.endswith('txt.gz'):
 	try:
@@ -402,7 +398,7 @@ print('{:15}'.format('Original file:'), args.filename, '\n''{:15}'.format('Trimm
 
 
 
-#### 2. Detect Phred score ####
+#### Detect Phred score ####
 phred33 = {
 	'!': 0, '"': 1, '#': 2, '$': 3, '%': 4, '&': 5, "'": 6, '(': 7, ')': 8, '*': 9, 
 	'+': 10, ',': 11, '-': 12, '.': 13, '/': 14, '0': 15, '1': 16, '2': 17, '3': 18, '4': 19,
@@ -416,12 +412,6 @@ phred64 = {
 	'^': 30, '_': 31, '`': 32, 'a': 33, 'b': 34, 'c': 35, 'd': 36, 'e': 37, 'f': 38, 'g': 39, 
 	'h': 40, 'i': 41}
 
-
-	
-
-####MAIN PROGRAM####
-
-
 #if no phred scale is given, detect it automaticly
 if args.phred_scale == None:
 	phred_scale = detect_phred(infile)
@@ -432,6 +422,7 @@ else:
 	phred_scale = args.phred_scale
 	
  
+#### TRIMMING AND FILTERING #### 
 #Initialize
 (read_count, trim_count, filtered_count, excluded_count, line_count, nuc_sum) = (0, 0, 0, 0, 0,0)
 (header, seq, plus, qual, seq_qual_trim) = ('', '', '', '','')
@@ -535,7 +526,8 @@ for line in infile:
 		#reset 
 		(header, seq, plus, qual, seq_qual_trim) = ('', '', '', '','')
 
-####Saving to log file
+
+#### Saving to log file ####
 print('{:25}'.format('Settings for analysis'), file = logfile)
 [print(key, ':', value, file = logfile) for key, value in options.items()]
 print('\nCounts of reads in file', file = logfile)
